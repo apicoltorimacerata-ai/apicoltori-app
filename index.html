@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APICOLTORI MACERATA</title>
+<meta name="theme-color" content="#11111B">
+<meta name="description" content="App del Consorzio Apistico Provinciale di Macerata">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Apicoltori MC">
+
+<!-- ============================================================
+     CONFIGURAZIONE: modifica solo questa parte
+     ============================================================ -->
+<script>
+  // 1) Incolla qui l'App ID di OneSignal (Settings > Keys & IDs)
+  const ONESIGNAL_APP_ID = "INSERISCI-QUI-APP-ID-ONESIGNAL";
+
+  // 2) Pulsanti della schermata iniziale, nell'ordine in cui appaiono.
+  //    mezzo: true  = pulsante a mezza larghezza (due affiancati)
+  const PULSANTI = [
+    { testo: "IN EVIDENZA",
+      link: "https://apicoltorimacerata.it/in-evidenza/" },
+    { testo: "PROSSIMA SCADENZA 1: 15/06 RITIRO PRESIDI SANITARI", mezzo: true,
+      link: "https://apicoltorimacerata.it/distribuzione-presidi-sanitari-2026/" },
+    { testo: "PROSSIMA SCADENZA 2: 15/11 PRENOTAZIONE PRESIDI 2027", mezzo: true,
+      link: "https://apicoltorimacerata.it/per-chi-fosse-interessato-allacquisto-il-termine-per-le-prenotazioni-e/" },
+    { testo: "SCARICA MODULI ADESIONE",
+      link: "https://apicoltorimacerata.it/moduli-di-adesione/" },
+    { testo: "SEGNALAZIONE VESPA ORIENTALIS",
+      link: "https://form.jotform.com/250941755254056" },
+    { testo: "MODULO PRENOTAZIONE PRESIDI",
+      link: "https://form.jotform.com/253002819198358" },
+    { testo: "INVIA DOCUMENTI CONSORZIO",
+      link: "https://form.jotform.com/253064467184360" },
+    { testo: "INVIA CENSIMENTO 2026",
+      link: "https://form.jotform.com/253063797819370" },
+  ];
+</script>
+<!-- ============================================================ -->
+
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
+<style>
+  :root {
+    --sfondo: #fff192;
+    --scuro: #11111B;
+    --chiaro: #fff192;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--sfondo); min-height: 100%; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--scuro);
+    -webkit-tap-highlight-color: transparent;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  header {
+    position: sticky; top: 0; z-index: 5;
+    height: calc(52px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 12px 0;
+    display: flex; align-items: center; justify-content: flex-end;
+    background: var(--sfondo);
+  }
+  .campanella {
+    width: 44px; height: 44px; border: 0; border-radius: 50%;
+    background: transparent; color: var(--scuro); cursor: pointer;
+    display: grid; place-items: center; position: relative;
+  }
+  .campanella:active { background: rgba(17,17,27,.08); }
+  .campanella svg { width: 24px; height: 24px; }
+  .campanella .punto {
+    position: absolute; top: 9px; right: 9px; width: 9px; height: 9px;
+    border-radius: 50%; background: #d62d20; border: 2px solid var(--sfondo);
+  }
+  .campanella.attiva .punto { display: none; }
+
+  main { max-width: 480px; margin: 0 auto; padding: 8px 20px 40px; }
+  .logo {
+    display: block; width: 104px; height: auto; aspect-ratio: 445/529;
+    object-fit: cover; border-radius: 12px; margin: 8px auto 24px;
+  }
+  .griglia { display: flex; flex-wrap: wrap; gap: 12px; }
+  .pulsante {
+    flex: 1 1 100%;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 48px; padding: 12px 14px;
+    background: var(--scuro); color: var(--chiaro);
+    border-radius: 6px; text-decoration: none; text-align: center;
+    font-weight: 700; font-size: 15px; line-height: 1.25; letter-spacing: .01em;
+    transition: transform .08s ease, opacity .08s ease;
+  }
+  .pulsante.mezzo { flex: 1 1 calc(50% - 6px); min-height: 118px; }
+  .pulsante:active { transform: scale(.98); opacity: .9; }
+  .pulsante:focus-visible { outline: 3px solid var(--scuro); outline-offset: 3px; }
+
+  .avviso {
+    position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom));
+    max-width: 448px; margin: 0 auto;
+    background: var(--scuro); color: #fff; border-radius: 10px;
+    padding: 14px 16px; font-size: 14px; line-height: 1.4;
+    display: none; gap: 12px; align-items: center; z-index: 10;
+    box-shadow: 0 6px 24px rgba(0,0,0,.25);
+  }
+  .avviso.visibile { display: flex; }
+  .avviso p { flex: 1; }
+  .avviso button {
+    border: 0; border-radius: 6px; padding: 9px 12px; font: inherit; font-weight: 700;
+    background: var(--chiaro); color: var(--scuro); cursor: pointer; white-space: nowrap;
+  }
+  .avviso .chiudi { background: transparent; color: #fff; padding: 9px 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="campanella" id="campanella" aria-label="Attiva le notifiche">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2Z"/>
+    </svg>
+    <span class="punto"></span>
+  </button>
+</header>
+
+<main>
+  <img class="logo" src="logo.png" alt="Consorzio Apistico Provinciale di Macerata"
+       onerror="this.onerror=null;this.src='https://eu.jotform.com/uploads/apicoltorimacerata/form_files/pfc_clone_67af8a7717bc4.png?nc=1'">
+  <nav class="griglia" id="griglia"></nav>
+</main>
+
+<div class="avviso" id="avviso" role="status">
+  <p id="avviso-testo"></p>
+  <button id="avviso-azione" hidden></button>
+  <button class="chiudi" id="avviso-chiudi" aria-label="Chiudi">✕</button>
+</div>
+
+<script>
+  // ---------- Pulsanti ----------
+  const griglia = document.getElementById('griglia');
+  PULSANTI.forEach(p => {
+    const a = document.createElement('a');
+    a.className = 'pulsante' + (p.mezzo ? ' mezzo' : '');
+    a.href = p.link;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = p.testo;
+    griglia.appendChild(a);
+  });
+
+  // ---------- Avvisi in basso ----------
+  const avviso = document.getElementById('avviso');
+  const avvisoTesto = document.getElementById('avviso-testo');
+  const avvisoAzione = document.getElementById('avviso-azione');
+  document.getElementById('avviso-chiudi').onclick = () => avviso.classList.remove('visibile');
+  function mostraAvviso(testo, etichetta, azione) {
+    avvisoTesto.textContent = testo;
+    if (etichetta) {
+      avvisoAzione.hidden = false;
+      avvisoAzione.textContent = etichetta;
+      avvisoAzione.onclick = () => { avviso.classList.remove('visibile'); azione(); };
+    } else {
+      avvisoAzione.hidden = true;
+    }
+    avviso.classList.add('visibile');
+  }
+
+  // ---------- Notifiche push (OneSignal) ----------
+  const campanella = document.getElementById('campanella');
+  const oneSignalConfigurato = !ONESIGNAL_APP_ID.startsWith('INSERISCI');
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+
+  function aggiornaCampanella(attive) {
+    campanella.classList.toggle('attiva', !!attive);
+    campanella.setAttribute('aria-label', attive ? 'Notifiche attive' : 'Attiva le notifiche');
+  }
+
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  if (oneSignalConfigurato) {
+    OneSignalDeferred.push(async function (OneSignal) {
+      // Funziona sia alla radice del sito (Netlify, dominio proprio)
+      // sia in una sottocartella (GitHub Pages: utente.github.io/nome-repo/)
+      const base = location.pathname.replace(/[^/]*$/, '');
+      await OneSignal.init({
+        appId: ONESIGNAL_APP_ID,
+        serviceWorkerPath: base.slice(1) + 'OneSignalSDKWorker.js',
+        serviceWorkerParam: { scope: base },
+      });
+      aggiornaCampanella(OneSignal.Notifications.permission);
+      OneSignal.Notifications.addEventListener('permissionChange', aggiornaCampanella);
+    });
+  }
+
+  campanella.onclick = () => {
+    if (!oneSignalConfigurato) {
+      mostraAvviso('Notifiche non ancora configurate: manca l\'App ID di OneSignal.');
+      return;
+    }
+    if (isIOS && !isStandalone) {
+      mostraAvviso('Su iPhone, per ricevere le notifiche aggiungi prima l\'app alla schermata Home: tocca Condividi e poi "Aggiungi alla schermata Home".');
+      return;
+    }
+    OneSignalDeferred.push(async function (OneSignal) {
+      if (OneSignal.Notifications.permission) {
+        mostraAvviso('Le notifiche sono già attive su questo telefono.');
+      } else {
+        await OneSignal.Notifications.requestPermission();
+      }
+    });
+  };
+
+  // ---------- Invito a installare l'app (Android) ----------
+  let promptInstallazione = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    promptInstallazione = e;
+    mostraAvviso('Installa l\'app sul telefono per aprirla con un tocco.', 'Installa', async () => {
+      promptInstallazione.prompt();
+      promptInstallazione = null;
+    });
+  });
+  if (isIOS && !isStandalone) {
+    setTimeout(() => mostraAvviso('Per installare l\'app: tocca Condividi e poi "Aggiungi alla schermata Home".'), 1500);
+  }
+</script>
+</body>
+</html>
