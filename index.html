@@ -175,7 +175,15 @@
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 
-  function aggiornaCampanella(attive) {
+  // Stato di OneSignal: 'caricamento' | 'pronto' | messaggio di errore
+  let statoOneSignal = 'caricamento';
+
+  // La campanella è "attiva" (senza puntino rosso) solo se il permesso
+  // è concesso E il dispositivo risulta davvero iscritto su OneSignal.
+  function aggiornaCampanella() {
+    const OS = window.OneSignal;
+    const attive = statoOneSignal === 'pronto' && OS &&
+      OS.Notifications.permission && OS.User.PushSubscription.optedIn;
     campanella.classList.toggle('attiva', !!attive);
     campanella.setAttribute('aria-label', attive ? 'Notifiche attive' : 'Attiva le notifiche');
   }
@@ -183,20 +191,27 @@
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   if (oneSignalConfigurato) {
     OneSignalDeferred.push(async function (OneSignal) {
-      // Funziona sia alla radice del sito (Netlify, dominio proprio)
-      // sia in una sottocartella (GitHub Pages: utente.github.io/nome-repo/)
-      const base = location.pathname.replace(/[^/]*$/, '');
-      await OneSignal.init({
-        appId: ONESIGNAL_APP_ID,
-        serviceWorkerPath: base.slice(1) + 'OneSignalSDKWorker.js',
-        serviceWorkerParam: { scope: base },
-      });
-      aggiornaCampanella(OneSignal.Notifications.permission);
-      OneSignal.Notifications.addEventListener('permissionChange', aggiornaCampanella);
+      try {
+        // Funziona sia alla radice del sito (Netlify, dominio proprio)
+        // sia in una sottocartella (GitHub Pages: utente.github.io/nome-repo/)
+        const base = location.pathname.replace(/[^/]*$/, '');
+        await OneSignal.init({
+          appId: ONESIGNAL_APP_ID,
+          serviceWorkerPath: base.slice(1) + 'OneSignalSDKWorker.js',
+          serviceWorkerParam: { scope: base },
+        });
+        statoOneSignal = 'pronto';
+        OneSignal.Notifications.addEventListener('permissionChange', aggiornaCampanella);
+        OneSignal.User.PushSubscription.addEventListener('change', aggiornaCampanella);
+      } catch (e) {
+        statoOneSignal = 'Errore di OneSignal: ' + (e && e.message ? e.message : e);
+        console.error(e);
+      }
+      aggiornaCampanella();
     });
   }
 
-  campanella.onclick = () => {
+  campanella.onclick = async () => {
     if (!oneSignalConfigurato) {
       mostraAvviso('Notifiche non ancora configurate: manca l\'App ID di OneSignal.');
       return;
@@ -205,13 +220,42 @@
       mostraAvviso('Su iPhone, per ricevere le notifiche aggiungi prima l\'app alla schermata Home: tocca Condividi e poi "Aggiungi alla schermata Home".');
       return;
     }
-    OneSignalDeferred.push(async function (OneSignal) {
-      if (OneSignal.Notifications.permission) {
-        mostraAvviso('Le notifiche sono già attive su questo telefono.');
-      } else {
-        await OneSignal.Notifications.requestPermission();
+    if (!('Notification' in window)) {
+      mostraAvviso('Questo browser non supporta le notifiche.');
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      mostraAvviso('Le notifiche sono bloccate su questo dispositivo. Riattivale dalle impostazioni dell\'app (o del sito nel browser) e poi riapri l\'app.');
+      return;
+    }
+    if (statoOneSignal === 'caricamento') {
+      mostraAvviso(window.OneSignal
+        ? 'Un momento, sto preparando le notifiche. Riprova tra qualche secondo.'
+        : 'Il servizio notifiche non si è caricato (connessione assente o bloccata da un filtro/adblock).');
+      return;
+    }
+    if (statoOneSignal !== 'pronto') {
+      mostraAvviso(statoOneSignal);
+      return;
+    }
+    const OS = window.OneSignal;
+    try {
+      if (!OS.Notifications.permission) {
+        await OS.Notifications.requestPermission();
       }
-    });
+      if (OS.Notifications.permission && !OS.User.PushSubscription.optedIn) {
+        await OS.User.PushSubscription.optIn();
+      }
+    } catch (e) {
+      mostraAvviso('Errore di OneSignal: ' + (e && e.message ? e.message : e));
+      return;
+    }
+    aggiornaCampanella();
+    if (OS.Notifications.permission && OS.User.PushSubscription.optedIn) {
+      mostraAvviso('Notifiche attive su questo dispositivo.');
+    } else if (Notification.permission === 'denied') {
+      mostraAvviso('Hai rifiutato le notifiche. Per attivarle cambia il permesso dalle impostazioni.');
+    }
   };
 
   // ---------- Invito a installare l'app (Android) ----------
